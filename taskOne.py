@@ -63,16 +63,46 @@ def task_one():
             return []
     
     def clean_text(title,work):
-        cleaned_text = ''
-        print(f"{title}. {work}")
+        """
+        Removes the preamble and postamble from the Project Gutenberg text.
+
+        Args:
+            title (str): The title of the book.
+            work (str): The full text of the book.
+
+        Returns:
+            str: The cleaned main content of the book.
+        """
+        # Identify patterns for the start and end of the main content
+        start_marker = r"\*\*\* START OF (THIS|THE) PROJECT GUTENBERG EBOOK .*? \*\*\*"
+        end_marker = r"\*\*\* END OF (THIS|THE) PROJECT GUTENBERG EBOOK .*? \*\*\*"
+
+        # Find the start of the main content
+        start_match = re.search(start_marker, work, re.IGNORECASE)
+        end_match = re.search(end_marker, work, re.IGNORECASE)
+
+        if not start_match or not end_match:
+            print(f"Markers not found for {title}. Returning full text.")
+            return work.strip()  # If markers are not found, return the original text
+
+        # Extract the main content
+        start_index = start_match.end()  # Start just after the start marker
+        end_index = end_match.start()  # End just before the end marker
+
+        cleaned_text = work[start_index:end_index].strip()
+
+        print(f"Cleaned text for {title}.")
         return cleaned_text
 
-    # run all tasks
+
+    # Run all tasks
     selected_works = select_random_gutenberg_works()
-    # print(selected_works)
-    for idx, (title, url) in enumerate(selected_works, 1):
-        clean_text(title,url)
-        # print(f"{idx}. {title}")#: {url}")
+
+    for idx, (title, work) in enumerate(selected_works, 1):
+        cleaned_work = clean_text(title, work)
+        print(f"{idx}. {title}")
+        print(cleaned_work[:500])  # Print the first 500 characters of the cleaned work
+
 
 
 task_one()        
