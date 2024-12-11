@@ -20,7 +20,6 @@ def task_one():
             # Extract links to eBook pages manually using regex
             page_content = response.text
             ebook_links = re.findall(r'href="(/ebooks/\d+)"', page_content)
-            # print(page_content)
             ebook_links = [f"https://www.gutenberg.org{link}" for link in ebook_links]
 
             if len(ebook_links) < 5:
@@ -43,7 +42,6 @@ def task_one():
 
                     if text_match and title_match:
                         full_text_url = f"https://www.gutenberg.org{text_match.group(1)}"
-
                         actual_book_data = requests.get(full_text_url).text
 
                         title = title_match.group(1).strip()
@@ -62,47 +60,65 @@ def task_one():
             print(f"Error fetching data from Project Gutenberg: {e}")
             return []
     
-    def clean_text(title,work):
+    def clean_text(work):
         """
-        Removes the preamble and postamble from the Project Gutenberg text.
+        Removes the preamble and postamble from the text,
+        removes unwanted characters, makes all letters uppercase,
+        and removes specific words from the cleaned text.
 
         Args:
-            title (str): The title of the book.
             work (str): The full text of the book.
+            forbidden_words (list): A list of words that will be removed from the text.
 
         Returns:
-            str: The cleaned main content of the book.
+            str: The cleaned and transformed text with forbidden words removed.
         """
-        # Identify patterns for the start and end of the main content
+        # 1. Remove the preamble and postamble using regex
         start_marker = r"\*\*\* START OF (THIS|THE) PROJECT GUTENBERG EBOOK .*? \*\*\*"
         end_marker = r"\*\*\* END OF (THIS|THE) PROJECT GUTENBERG EBOOK .*? \*\*\*"
 
-        # Find the start of the main content
+        # Find the start and end of the main content
         start_match = re.search(start_marker, work, re.IGNORECASE)
         end_match = re.search(end_marker, work, re.IGNORECASE)
 
         if not start_match or not end_match:
-            print(f"Markers not found for {title}. Returning full text.")
-            return work.strip()  # If markers are not found, return the original text
+            print("Markers not found. Returning full text.")
+            return work.strip()
 
-        # Extract the main content
-        start_index = start_match.end()  # Start just after the start marker
-        end_index = end_match.start()  # End just before the end marker
+        # Extract the main content between the start and end markers
+        start_index = start_match.end()
+        end_index = end_match.start()
 
-        cleaned_text = work[start_index:end_index].strip()
+        work = work[start_index:end_index].strip()
 
-        print(f"Cleaned text for {title}.")
-        return cleaned_text
+        # 2. Remove all characters except ASCII letters (uppercase and lowercase), full stops, and spaces
+        cleaned_work = re.sub(r'[^A-Za-z. ]', '', work)
+
+        # 3. Convert all letters to uppercase
+        cleaned_work = cleaned_work.upper()
+
+        forbidden_words = ['chapters','chapter']
+
+        # 4. Remove forbidden words from the cleaned text
+        for word in forbidden_words:
+            # Use regex to remove the word and any surrounding spaces
+            cleaned_work = re.sub(r'\b' + re.escape(word.upper()) + r'\b', '', cleaned_work)
+
+        # 5. Return the cleaned text
+        return cleaned_work.strip()
 
 
     # Run all tasks
     selected_works = select_random_gutenberg_works()
 
     for idx, (title, work) in enumerate(selected_works, 1):
-        cleaned_work = clean_text(title, work)
+        cleaned_work = clean_text(work)
         print(f"{idx}. {title}")
+        print("First 500 characters:")
         print(cleaned_work[:500])  # Print the first 500 characters of the cleaned work
+        print('\n\n')
+        print("Last 500 characters:")
+        print(cleaned_work[-500:])  # Print the last 500 characters of the cleaned work
+        print("\n" + "-"*40)  # Separator between works
 
-
-
-task_one()        
+task_one()
